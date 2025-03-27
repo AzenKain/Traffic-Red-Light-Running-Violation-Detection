@@ -1,0 +1,33 @@
+networks:
+  app_cv:
+    driver: bridge
+
+services:
+  backend:
+    image: azenkain/apicv:latest
+    container_name: apicv_app
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - PYTHONUNBUFFERED=1
+    networks:
+      - app_cv
+    # devices:
+    #   # - "/dev/video0:/dev/video0" EX: for linux pass thought camera
+    #   # - "/dev/video1:/dev/video1"
+    #   # - "/dev/video2:/dev/video2"
+    # privileged: true
+    restart: unless-stopped
+
+  frontend:
+    image: azenkain/fecv:latest
+    container_name: fecv_app
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - app_cv
+    restart: unless-stopped
