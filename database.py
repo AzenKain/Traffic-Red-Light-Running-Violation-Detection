@@ -1,5 +1,9 @@
 import sqlite3
 import json
+import time
+import cv2
+import numpy as np
+import base64
 
 def init_db():
     conn = sqlite3.connect("cameras.db")
@@ -15,7 +19,17 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             camera_id INTEGER,
             lines TEXT,
+            ratio REAL,
             UNIQUE(camera_id)
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS violations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            time INTEGER,
+            plate_text TEXT,
+            vehicle_image BLOB,
+            plate_image BLOB
         )
     """)
     conn.commit()
@@ -36,17 +50,55 @@ def save_default_camera(camera_id: int):
     conn.commit()
     conn.close()
 
-def save_camera_lines(camera_id: int, lines: list):
+def save_camera_lines(camera_id: int, lines: list, ratio: float = 1):
     conn = sqlite3.connect("cameras.db")
     cursor = conn.cursor()
-    cursor.execute("REPLACE INTO camera_lines (camera_id, lines) VALUES (?, ?)", (camera_id, json.dumps(lines)))
+    cursor.execute("REPLACE INTO camera_lines (camera_id, lines, ratio) VALUES (?, ?, ?)", (camera_id, json.dumps(lines), ratio))
     conn.commit()
     conn.close()
 
 def get_camera_lines(camera_id: int):
     conn = sqlite3.connect("cameras.db")
     cursor = conn.cursor()
-    cursor.execute("SELECT lines FROM camera_lines WHERE camera_id = ?", (camera_id,))
+    cursor.execute("SELECT lines, ratio FROM camera_lines WHERE camera_id = ?", (camera_id,))
     row = cursor.fetchone()
     conn.close()
-    return json.loads(row[0]) if row else []
+    return (json.loads(row[0]), row[1]) if row else ([], 1)
+
+def image_to_base64(image):
+    _, buffer = cv2.imencode(".jpg", image)
+    return base64.b64encode(buffer).decode("utf-8")
+
+def save_violation(plate_text, vehicle_img, plate_img):
+    conn = sqlite3.connect("cameras.db")
+    cursor = conn.cursor()
+    current_time = int(time.time())
+    
+    cursor.execute("SELECT time FROM violations WHERE plate_text = ? ORDER BY time DESC LIMIT 1", (plate_text,))
+    last_record = cursor.fetchone()
+    
+    if last_record and current_time - last_record[0] <= 5:
+        conn.close()
+        return  
+    
+    vehicle_img_b64 = image_to_base64(vehicle_img)
+    plate_img_b64 = image_to_base64(plate_img)
+    
+    cursor.execute("INSERT INTO violations (time, plate_text, vehicle_image, plate_image) VALUES (?, ?, ?, ?)", 
+                   (current_time, plate_text, vehicle_img_b64, plate_img_b64))
+    conn.commit()
+    conn.close()
+
+def get_violations():
+    conn = sqlite3.connect("cameras.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, time, plate_text, vehicle_image, plate_image FROM violations ORDER BY time DESC")
+    rows = cursor.fetchall()
+    conn.close()
+    return [{
+        "id": row[0],
+        "time": row[1],
+        "plate_text": row[2],
+        "vehicle_image": f"data:image/jpeg;base64,{row[3]}",
+        "plate_image": f"data:image/jpeg;base64,{row[4]}"
+    } for row in rows]
