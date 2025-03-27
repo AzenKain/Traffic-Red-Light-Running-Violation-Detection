@@ -134,6 +134,7 @@ export default function CameraSettings() {
         }
     };
 
+    
     useEffect(() => {
         if (websocket) {
             websocket.close();
@@ -310,7 +311,7 @@ export default function CameraSettings() {
                                         ✕
                                     </button>
                                 </form>
-                                {annotateImageSrc && <AnnotateImage imageSrc={annotateImageSrc} />}
+                                {annotateImageSrc && <AnnotateImage imageSrc={annotateImageSrc} cameraId={defaultCameraId}/>}
 
                             </div>
                         </dialog>
