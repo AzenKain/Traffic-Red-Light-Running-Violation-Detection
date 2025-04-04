@@ -1,3 +1,4 @@
+import time
 import cv2
 import base64
 import asyncio
@@ -90,7 +91,6 @@ async def stream_video(websocket: WebSocket, camera_id: int):
                     continue
                 except ValueError:
                     break
-
 
             results = model(frame)
             red_light = False

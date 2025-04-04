@@ -7,12 +7,12 @@ interface Violation {
   id: number;
   time: number;
   plate_text: string;
+  vehicle_type: string;
   vehicle_image: string;
   plate_image: string;
 }
 
 const ViolationsDashboard: React.FC = () => {
-  const [violations, setViolations] = useState<Violation[]>([]);
   const [groupedViolations, setGroupedViolations] = useState<{[key: string]: Violation[]}>();
 
   useEffect(() => {
@@ -20,9 +20,7 @@ const ViolationsDashboard: React.FC = () => {
       try {
         const response = await fetch('http://localhost:8000/violations');
         const data: Violation[] = await response.json();
-        setViolations(data);
 
-        // Nhóm vi phạm theo ngày
         const grouped = data.reduce((acc, violation) => {
           const date = format(new Date(violation.time * 1000), 'dd/MM/yyyy');
           if (!acc[date]) {
@@ -57,10 +55,12 @@ const ViolationsDashboard: React.FC = () => {
                 <div className="flex justify-between mb-2">
                   <span className="font-medium">Biển Số: {violation.plate_text}</span>
                   <span className="text-gray-600">
-                    {format(new Date(violation.time * 1000), 'HH:mm:ss')}
+                    TG: {format(new Date(violation.time * 1000), 'HH:mm:ss')}
                   </span>
+                  
                 </div>
-                
+                <div className="text-gray-700">Loại phương tiện: {violation.vehicle_type}</div>
+
                 <div className="grid grid-cols-2 gap-2">
                   {violation.vehicle_image && (
                     <div>

@@ -46,11 +46,12 @@ export default function AnnotateImage({ imageSrc, cameraId }: { imageSrc: string
 
   // Fetch lines data
   useEffect(() => {
+   
     if (!cameraId) return;
-    
+
     const fetchLines = async () => {
       try {
-        const response = await fetch(`http://localhost:8000/line?camera_id=${cameraId}`);
+        const response = await fetch(`http://localhost:8000/line?camera_id=${cameraId-1}`);
         const data = await response.json();
         if (data.lines && data.ratio) {
 
@@ -158,7 +159,7 @@ export default function AnnotateImage({ imageSrc, cameraId }: { imageSrc: string
       const response = await fetch("http://localhost:8000/line/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ camera_id: cameraId, lines: transformedLines, ratio: scale }),
+        body: JSON.stringify({ camera_id: cameraId-1, lines: transformedLines, ratio: scale }),
       });
 
       const result = await response.json();

@@ -28,6 +28,7 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             time INTEGER,
             plate_text TEXT,
+            vehicle_type TEXT,
             vehicle_image BLOB,
             plate_image BLOB
         )
@@ -69,7 +70,7 @@ def image_to_base64(image):
     _, buffer = cv2.imencode(".jpg", image)
     return base64.b64encode(buffer).decode("utf-8")
 
-def save_violation(plate_text, vehicle_img, plate_img):
+def save_violation(plate_text, vehicle_type, vehicle_img, plate_img):
     conn = sqlite3.connect("cameras.db")
     cursor = conn.cursor()
     current_time = int(time.time())
@@ -84,21 +85,23 @@ def save_violation(plate_text, vehicle_img, plate_img):
     vehicle_img_b64 = image_to_base64(vehicle_img)
     plate_img_b64 = image_to_base64(plate_img)
     
-    cursor.execute("INSERT INTO violations (time, plate_text, vehicle_image, plate_image) VALUES (?, ?, ?, ?)", 
-                   (current_time, plate_text, vehicle_img_b64, plate_img_b64))
+    cursor.execute("INSERT INTO violations (time, plate_text, vehicle_type, vehicle_image, plate_image) VALUES (?, ?, ?, ?, ?)", 
+                (current_time, plate_text, vehicle_type, vehicle_img_b64, plate_img_b64))
+
     conn.commit()
     conn.close()
 
 def get_violations():
     conn = sqlite3.connect("cameras.db")
     cursor = conn.cursor()
-    cursor.execute("SELECT id, time, plate_text, vehicle_image, plate_image FROM violations ORDER BY time DESC")
+    cursor.execute("SELECT id, time, plate_text, vehicle_type, vehicle_image, plate_image FROM violations ORDER BY time DESC")
     rows = cursor.fetchall()
     conn.close()
     return [{
         "id": row[0],
         "time": row[1],
         "plate_text": row[2],
-        "vehicle_image": f"data:image/jpeg;base64,{row[3]}",
-        "plate_image": f"data:image/jpeg;base64,{row[4]}"
+        "vehicle_type" : row[3],
+        "vehicle_image": f"data:image/jpeg;base64,{row[4]}",
+        "plate_image": f"data:image/jpeg;base64,{row[5]}"
     } for row in rows]

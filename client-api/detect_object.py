@@ -2,11 +2,8 @@ import cv2
 from detect_plate import extract_license_plate
 import logging
 from database import save_violation
-from paddleocr import PaddleOCR
+from ocr import apply_ocr_to_image
 
-# Khởi tạo PaddleOCR
-ocr = PaddleOCR(use_angle_cls=True, lang='en') 
-logging.getLogger("ppocr").setLevel(logging.ERROR)
 violation_history = []
 
 def detect_vehicles_crossing_line(frame, results, lines, threshold=0.33):
@@ -68,7 +65,7 @@ def check_vehicle_crossed_line(frame, bbox, lines):
 
     return False
 
-def process_license_plate(frame, bbox):
+def process_license_plate(frame, bbox, vehicle_type):
     try:
         x1, y1, x2, y2 = bbox
     except ValueError as e:
@@ -85,7 +82,7 @@ def process_license_plate(frame, bbox):
     plate_text = apply_ocr_to_image(plate_img[0])
     if plate_text != "":
         plate_text = ''.join(c for c in plate_text if c.isalnum())
-        save_violation(plate_text, vehicle_img, plate_img[0])
+        save_violation(plate_text, vehicle_type, vehicle_img, plate_img[0])
         return plate_text
     return None
 
@@ -117,7 +114,7 @@ def handle_traffic_violations(frame, results, lines, processed_vehicles, red_lig
             vehicle_id = f"{int(x1)}_{int(y1)}_{int(x2)}_{int(y2)}"
             if vehicle_id not in processed_vehicles:
                 processed_vehicles.add(vehicle_id)
-                plate_text = process_license_plate(frame, bbox)
+                plate_text = process_license_plate(frame, bbox, vehicle_type)
                 
                 if plate_text != None:
                     frame = draw_violation_info(frame, bbox, vehicle_type, plate_text)
@@ -129,32 +126,3 @@ def handle_traffic_violations(frame, results, lines, processed_vehicles, red_lig
 
     return frame, processed_vehicles
 
-def apply_ocr_to_image(image_array):
-    if image_array is None or image_array.size == 0:
-        return None
-    
-    try:
-        if len(image_array.shape) == 3 and image_array.shape[2] == 3:
-            image = cv2.cvtColor(image_array, cv2.COLOR_BGR2RGB)
-        else:
-            image = image_array.copy() 
-
-        image = cv2.resize(image, (image.shape[1] * 2, image.shape[0] * 2))
-
-        result = ocr.ocr(image)
-        if result[0] is None:
-            return ""
-        recognized_text = []
-
-        for line in result:
-            for detection in line:
-                text = detection[1][0]
-                recognized_text.append(text)
-
-        res = ' '.join(recognized_text).strip()
-        res = ' '.join(res.split())
-        print(res)
-        return res
-    except Exception as e:
-        print(f"OCR Error: {e}")
-        return ""

@@ -21,5 +21,7 @@ def get_camera(camera_id: int) -> cv2.VideoCapture:
         cap = cv2.VideoCapture(camera_id)
         if not cap.isOpened():
             raise ValueError(f"Không thể mở camera {camera_id}")
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
         active_cameras[camera_id] = cap
     return active_cameras[camera_id]

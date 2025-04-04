@@ -86,7 +86,7 @@ export default function CameraSettings() {
                 const data = await response.json();
                 // Convert the data to the expected format
                 const cameras = data.available_cameras.map((id: number) => ({
-                    id,
+                    id: id + 1,
                     name: `Camera ${id}`
                 }));
 
@@ -120,7 +120,7 @@ export default function CameraSettings() {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ camera_id: defaultCameraId })
+                body: JSON.stringify({ camera_id: defaultCameraId - 1 })
             });
 
             if (response.ok) {
@@ -134,7 +134,7 @@ export default function CameraSettings() {
         }
     };
 
-    
+
     useEffect(() => {
         if (websocket) {
             websocket.close();
@@ -143,11 +143,11 @@ export default function CameraSettings() {
         }
         if (defaultCameraId === -1) return
 
-        const ws = new WebSocket(`ws://localhost:8000/ws?camera_id=${defaultCameraId}`);
+        const ws = new WebSocket(`ws://localhost:8000/ws?camera_id=${defaultCameraId - 1}`);
         setWebsocket(ws);
 
         ws.onopen = () => {
-            console.log(`WebSocket connected to camera ${defaultCameraId}`);
+            console.log(`WebSocket connected to camera ${defaultCameraId - 1}`);
         };
 
         ws.onmessage = (event) => {
@@ -284,11 +284,11 @@ export default function CameraSettings() {
                         <div className="relative w-full mt-6 px-4">
                             {imageSrc ? (
                                 <div className="space-y-4">
-                                    <div className="overflow-hidden rounded-xl shadow-md transition-all duration-300 hover:shadow-xl">
+                                    <div className="w-full h-[300px] flex items-center justify-center overflow-hidden rounded-xl shadow-md transition-all duration-300 hover:shadow-xl">
                                         <img
                                             src={imageSrc}
                                             alt="Live Stream"
-                                            className="w-full h-auto object-cover transition-transform duration-300 hover:scale-[1.02]"
+                                            className="max-w-full max-h-full object-contain transition-transform duration-300 hover:scale-[1.02]"
                                         />
                                     </div>
 
@@ -311,7 +311,7 @@ export default function CameraSettings() {
                                         ✕
                                     </button>
                                 </form>
-                                {annotateImageSrc && <AnnotateImage imageSrc={annotateImageSrc} cameraId={defaultCameraId}/>}
+                                {annotateImageSrc && <AnnotateImage imageSrc={annotateImageSrc} cameraId={defaultCameraId} />}
 
                             </div>
                         </dialog>
