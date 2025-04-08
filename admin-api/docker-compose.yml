@@ -1,0 +1,51 @@
+
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    environment:
+      MONGO_INITDB_DATABASE: cameras
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - cv-admin-api
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - cv-admin-api
+
+  # backend:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: camera_backend
+  #   ports:
+  #     - "3440:3434"
+  #   depends_on:
+  #     - mongodb
+  #     - redis
+
+  #   environment:
+  #     ENV: production
+  #     MONGO_CONNECTION_URI: mongodb://mongodb:27017
+  #     MONGO_DATABASE: cameras
+  #     REDIS_CONNECTION_URI: redis:6379
+  #     PORT: 3434
+  #     JWT_SECRET: the-king-also-has-to-cum
+  #     JWT_REFRESH_SECRET: the-kingdom-cum
+  #     SERVER_URL: http://localhost:3434
+  #   networks:
+  #     - cv-admin-api
+
+volumes:
+  mongo-data:
+
+networks:
+  cv-admin-api:
+    driver: bridge

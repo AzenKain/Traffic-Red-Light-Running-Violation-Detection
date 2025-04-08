@@ -1,5 +1,6 @@
 "use client";
 import AnnotateImage from "@/components/draw";
+import { se } from "date-fns/locale";
 import { useEffect, useState } from "react";
 
 interface Camera {
@@ -39,12 +40,12 @@ export default function CameraSettings() {
 
         try {
             // Replace with your actual API endpoint
-            const response = await fetch('http://localhost:8000/validate-token', {
+            const response = await fetch('http://localhost:8000/save-settings', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ token })
+                body: JSON.stringify({ data: token })
             });
 
             if (response.ok) {
@@ -142,16 +143,25 @@ export default function CameraSettings() {
             setImageSrc(null);
         }
         if (defaultCameraId === -1) return
+        let selectCamera = defaultCameraId - 1
+        if (selectCamera < 0) selectCamera = 0
 
-        const ws = new WebSocket(`ws://localhost:8000/ws?camera_id=${defaultCameraId - 1}`);
+
+        const ws = new WebSocket(`ws://localhost:8000/ws?camera_id=${selectCamera}`);
         setWebsocket(ws);
 
         ws.onopen = () => {
-            console.log(`WebSocket connected to camera ${defaultCameraId - 1}`);
+            console.log(`WebSocket connected to camera ${selectCamera}`);
         };
 
         ws.onmessage = (event) => {
-            setImageSrc(`data:image/jpeg;base64,${event.data}`);
+            const arrayBuffer = event.data;
+        
+            const blob = new Blob([arrayBuffer], { type: "image/jpeg" });
+        
+            const imageUrl = URL.createObjectURL(blob);
+    
+            setImageSrc(imageUrl);
         };
 
         ws.onerror = (error) => {

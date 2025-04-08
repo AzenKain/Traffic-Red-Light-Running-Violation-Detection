@@ -1,0 +1,6 @@
+.vscode/
+.history/
+proto/
+test/
+tmp/
+.env

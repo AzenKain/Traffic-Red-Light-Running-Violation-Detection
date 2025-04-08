@@ -4,7 +4,8 @@ import numpy as np
 penalized_texts = []
 license_plate_cascade = cv2.CascadeClassifier('haarcascade_plate_number.xml')
 
-def extract_license_plate(frame, mask_line):    
+def extract_license_plate(frame, mask_line):
+    result_frame = frame.copy()    
     gray = cv2.cvtColor(mask_line, cv2.COLOR_BGR2GRAY)
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
     gray = clahe.apply(gray)
@@ -22,11 +23,11 @@ def extract_license_plate(frame, mask_line):
     license_plate_images = []
 
     if len(license_plates) == 0:
-        return frame, license_plate_images  # Trả về frame gốc nếu không có biển số
+        return result_frame, license_plate_images  # Trả về frame gốc nếu không có biển số
 
     for (x_plate, y_plate, w_plate, h_plate) in license_plates:
-        cv2.rectangle(frame, (x_plate + x, y_plate + y), (x_plate + x + w_plate, y_plate + y + h_plate), (0, 255, 0), 3)
+        cv2.rectangle(result_frame, (x_plate + x, y_plate + y), (x_plate + x + w_plate, y_plate + y + h_plate), (0, 255, 0), 3)
         license_plate_image = cropped_gray[y_plate:y_plate+h_plate, x_plate:x_plate+w_plate]
         license_plate_images.append(license_plate_image)
 
-    return frame, license_plate_images
+    return result_frame, license_plate_images

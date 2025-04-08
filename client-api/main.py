@@ -8,10 +8,11 @@ warnings.filterwarnings('ignore')
 import numpy as np
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, Request, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from database import get_violations, init_db, get_default_camera, save_default_camera, save_camera_lines, get_camera_lines
+from database import get_violations, init_db, get_default_camera, save_default_camera, save_camera_lines, get_camera_lines, save_camera_settings
 from camera import get_available_cameras, get_camera, active_cameras
 from detect_object import handle_traffic_violations
-from detect_traffic import count_traffic_lights, determine_color, draw_colored_lines
+from detect_traffic import count_traffic_lights
+from helper import decode_base64_to_dict
 from yolo_setup import model
 
 logging.getLogger("ultralytics").setLevel(logging.ERROR)
@@ -40,6 +41,20 @@ async def get_saved_default_camera():
 def read_violations():
     return get_violations()
 
+@app.post("/save-settings")
+async def save_settings(request: Request):
+    req = await request.json()
+    data = req.get("data")
+    if data is None:
+        return {"error": "data is required"}
+    decoded_data = decode_base64_to_dict(data)
+    camera_id = decoded_data.get("cameraId")
+    server_url = decoded_data.get("server")
+    key = decoded_data.get("key")
+    if camera_id is None or server_url is None or key is None:
+        return {"error": "cameraId, server, and key are required"}
+    save_camera_settings(camera_id, server_url, key)
+    return {"message": "Default camera saved successfully", "camera_id": camera_id}
 
 @app.post("/save-default-camera")
 async def save_camera(request: Request):
@@ -78,45 +93,41 @@ async def stream_video(websocket: WebSocket, camera_id: int):
     try:
         cap = get_camera(camera_id)
         lines, ratio = get_camera_lines(camera_id)
-       
+        isFirstFrame = True
         processed_vehicles = set()
         while True:
             success, frame = cap.read()
             if not success:
                 cap.release()
                 active_cameras.pop(camera_id, None)
-                await asyncio.sleep(1)
+                await asyncio.sleep(0.05)
                 try:
                     cap = get_camera(camera_id)
                     continue
                 except ValueError:
                     break
 
-            results = model(frame)
-            red_light = False
-            class_name = "traffic light"
-            for result in results:
-                boxes = result.boxes
-                for box in boxes:
-                    cls = int(box.cls.item())
-                    cls_name = result.names[cls]
+            width = 1280
+            ratio = width / frame.shape[1]
+            height = int(frame.shape[0] * ratio) 
+            frame = cv2.resize(frame, (width, height))
+            
+            if isFirstFrame:
+                isFirstFrame = False
+                for line in lines:
+                    line["start"]["x"] = int(line["start"]["x"] * ratio)
+                    line["start"]["y"] = int(line["start"]["y"] * ratio)
+                    line["end"]["x"] = int(line["end"]["x"] * ratio)
+                    line["end"]["y"] = int(line["end"]["y"] * ratio)
+           
+            results = await asyncio.to_thread(model, frame)
 
-                    if cls_name == class_name:
-                        x1, y1, x2, y2 = box.xyxy[0].tolist()
-                        conf = box.conf.item()
-
-                        if conf > 0.5:
-                            frame, color_name = determine_color(frame, (x1, y1, x2, y2), conf)
-                            frame = draw_colored_lines(frame, color_name, lines)
-                            if color_name == "red":
-                                red_light = True
-
-            frame, processed_vehicles = handle_traffic_violations(frame, results, lines, processed_vehicles, red_light)
+            if results:
+                frame, processed_vehicles = handle_traffic_violations(frame, results, lines, processed_vehicles)
 
             _, buffer = cv2.imencode(".jpg", frame)
-            img_str = base64.b64encode(buffer).decode("utf-8")
-            await websocket.send_text(img_str)
-            await asyncio.sleep(0.01)
+            await websocket.send_bytes(buffer.tobytes())
+            await asyncio.sleep(0.03)
 
     except WebSocketDisconnect:
         logging.info(f"Client ngắt kết nối từ camera {camera_id}")

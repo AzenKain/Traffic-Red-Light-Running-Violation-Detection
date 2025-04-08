@@ -64,7 +64,12 @@ export default function VideoStream() {
     };
 
     ws.onmessage = (event) => {
-      setImageSrc(`data:image/jpeg;base64,${event.data}`);
+      const arrayBuffer = event.data;
+        
+      const blob = new Blob([arrayBuffer], { type: "image/jpeg" });
+  
+      const imageUrl = URL.createObjectURL(blob);
+      setImageSrc(imageUrl);
     };
 
     ws.onerror = (error) => {
