@@ -93,7 +93,6 @@ async def stream_video(websocket: WebSocket, camera_id: int):
     try:
         cap = get_camera(camera_id)
         lines, ratio = get_camera_lines(camera_id)
-        isFirstFrame = True
         processed_vehicles = set()
         while True:
             success, frame = cap.read()
@@ -112,14 +111,6 @@ async def stream_video(websocket: WebSocket, camera_id: int):
             height = int(frame.shape[0] * ratio) 
             frame = cv2.resize(frame, (width, height))
             
-            if isFirstFrame:
-                isFirstFrame = False
-                for line in lines:
-                    line["start"]["x"] = int(line["start"]["x"] * ratio)
-                    line["start"]["y"] = int(line["start"]["y"] * ratio)
-                    line["end"]["x"] = int(line["end"]["x"] * ratio)
-                    line["end"]["y"] = int(line["end"]["y"] * ratio)
-           
             results = await asyncio.to_thread(model, frame)
 
             if results:

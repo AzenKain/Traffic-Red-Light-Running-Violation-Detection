@@ -79,9 +79,14 @@ def get_camera_settings():
     } if row else None
 
 def save_camera_lines(camera_id: int, lines: list, ratio: float = 1):
+    for line in lines:
+        line["start"]["x"] = int(line["start"]["x"] * 1920 / 1280 * ratio)
+        line["start"]["y"] = int(line["start"]["y"] * 1920 / 1280 * ratio)
+        line["end"]["x"] = int(line["end"]["x"] * 1920 / 1280 * ratio)
+        line["end"]["y"] = int(line["end"]["y"] * 1920 / 1280 * ratio)
     conn = sqlite3.connect("cameras.db")
     cursor = conn.cursor()
-    cursor.execute("REPLACE INTO camera_lines (camera_id, lines, ratio) VALUES (?, ?, ?)", (camera_id, json.dumps(lines), ratio))
+    cursor.execute("REPLACE INTO camera_lines (camera_id, lines, ratio) VALUES (?, ?, ?)", (camera_id, json.dumps(lines), 1920 / 1280 * ratio))
     conn.commit()
     conn.close()
 
@@ -91,8 +96,19 @@ def get_camera_lines(camera_id: int):
     cursor.execute("SELECT lines, ratio FROM camera_lines WHERE camera_id = ?", (camera_id,))
     row = cursor.fetchone()
     conn.close()
-    return (json.loads(row[0]), row[1]) if row else ([], 1)
+    if not row:
+        return ([], 1)
 
+    lines = json.loads(row[0])
+    ratio = row[1]
+
+    for line in lines:
+        line["start"]["x"] = int(line["start"]["x"] / ratio)
+        line["start"]["y"] = int(line["start"]["y"] / ratio)
+        line["end"]["x"] = int(line["end"]["x"] / ratio)
+        line["end"]["y"] = int(line["end"]["y"] / ratio)
+
+    return (lines, ratio)
 def image_to_base64(image):
     _, buffer = cv2.imencode(".jpg", image)
     return base64.b64encode(buffer).decode("utf-8")

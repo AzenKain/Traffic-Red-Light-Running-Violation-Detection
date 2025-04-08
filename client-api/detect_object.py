@@ -11,9 +11,10 @@ def detect_vehicles_crossing_line(frame, results, lines, threshold=0.33):
     result_frame = frame.copy()
     violating_vehicles = []
     vehicle_classes = ["car", "motorcycle", "truck", "bus", "bicycle"]
-
+    color_name = "unknown"
     for result in results:
         boxes = result.boxes
+        
         for box in boxes:
             cls = int(box.cls.item())
             cls_name = result.names[cls]
@@ -23,10 +24,9 @@ def detect_vehicles_crossing_line(frame, results, lines, threshold=0.33):
                 conf = box.conf.item()
                 if conf > threshold:
                     result_frame, color_name = determine_color(result_frame, (x1, y1, x2, y2), conf)
-                    result_frame = draw_colored_lines(result_frame, color_name, lines)
-    
+
                     if color_name != "red":
-                        return result_frame, []
+                        return result_frame, [], color_name
 
             if cls_name in vehicle_classes:
                 try:
@@ -41,7 +41,7 @@ def detect_vehicles_crossing_line(frame, results, lines, threshold=0.33):
                     if check_vehicle_crossed_line(result_frame, (x1, y1, x2, y2), lines):
                         violating_vehicles.append(((x1, y1, x2, y2), cls_name))
 
-    return result_frame, violating_vehicles
+    return result_frame, violating_vehicles, color_name
 
 def check_intersection(A, B, C, D):
     """
@@ -117,7 +117,7 @@ def draw_violation_info(frame, bbox, vehicle_type, plate_text=None):
 
 def handle_traffic_violations(frame, results, lines, processed_vehicles):
     result_frame = frame.copy()
-    result_frame, violations = detect_vehicles_crossing_line(result_frame, results, lines)
+    result_frame, violations, color_name = detect_vehicles_crossing_line(result_frame, results, lines)
     for bbox, vehicle_type in violations:
         try:
             x1, y1, x2, y2 = bbox
@@ -137,6 +137,6 @@ def handle_traffic_violations(frame, results, lines, processed_vehicles):
 
     if len(processed_vehicles) > 100:
         processed_vehicles.clear()
-
+    result_frame = draw_colored_lines(result_frame, color_name, lines)
     return result_frame, processed_vehicles
 

@@ -463,7 +463,7 @@ const ProductBox = () => {
 
                   <div className="mb-4.5">
                     <label className="mb-3 block text-sm font-medium text-black dark:text-white">
-                      Camera name <span className="text-meta-1">*</span>
+                      Address<span className="text-meta-1">*</span>
                     </label>
                     <input
                       value={address}

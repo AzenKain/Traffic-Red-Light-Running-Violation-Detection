@@ -16,7 +16,7 @@ export default function Home() {
         <Breadcrumb pageName="Profile" />
 
         <div className="overflow-hidden rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
-        <div className="text-center my-3 text-black dark:text-white text-4xl font-semibold">Welcome {userData.username} to GLAMIFY Admin</div>
+        <div className="text-center my-3 text-black dark:text-white text-4xl font-semibold">Welcome {userData.username} to Admin Page</div>
 
           <div className="relative z-20 h-35 md:h-65">
             <Image
