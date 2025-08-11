@@ -24,6 +24,9 @@ This project detects vehicles running red lights using YOLO v12, Haar Cascade, a
 7. **WebSocket Streaming:** Processed video frames with detected violations are streamed to the frontend.
 8. **User Interface:** The Next.js frontend displays real-time video, violation reports, and analytics.
 
+
+## DemoVideo: https://www.youtube.com/watch?v=R_aOi_E7W9s
+
 ## Installation
 
 ### Backend Setup
